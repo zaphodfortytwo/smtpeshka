@@ -17,7 +17,17 @@ exports.hook_queue = function(next, connection){
 
     var saveToDir = cfg.main.saveto || '/tmp/smtpeshka/send-emails';
 
-    var mailparser = new MailParser();
+    var mailparser = new MailParser({
+        streamAttachments: true,
+        showAttachmentLinks: true
+    });
+
+    mailparser.on("attachment", function(attachment, mail){
+        fse.ensureDirSync(saveToDir);
+        var attachname = path.join(saveToDir, attachment.contentId + '_' + attachment.generatedFileName);
+        var output = fs.createWriteStream(attachname);
+        attachment.stream.pipe(output);
+    });
 
     mailparser.on("end", function(obj){
         if (!obj || !obj.messageId){
